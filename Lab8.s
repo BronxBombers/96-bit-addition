@@ -193,6 +193,7 @@ back2		BL		NewLine
 			LDR		R1,=MultiHex
 			LDR		R2,=MultiHex2
 			BL		AddIntMultiU
+            BCS     OverFlow
 			MOVS	R1,#3
 			BL		PutHexIntMulti
 			BL		NewLine
@@ -214,6 +215,10 @@ InvInput2	BL		NewLine
 			BCS		InvInput2
 			B		back2
 
+OverFlow    LDR     R0,=Overflow
+            BL      PutString
+            BL      NewLine
+            B       MainLoop
 ;>>>>>   end main program code <<<<<
 
 ;>>>>>	 begin subroutine code <<<<<
@@ -397,8 +402,7 @@ LoopGS		BL		    GetChar		    ;Gets first character
             CMP         R0,R7
             BEQ         LoopGS
             BL          PutChar 
-            STRB		R0,[R2,#0]		;Stores the first char
-            ADDS		R2,#1			;StrPointer++
+            STRB		R0,[R2,R3]		;Stores the first char
             ADDS		R3,#1			;Counter++
             CMP		    R3,R1			;If (Counter = Buffer capacity):
             BEQ		    Buffer  		;	End Loop
@@ -412,10 +416,9 @@ Buffer      BL          GetChar         ;If the buffer capacity is reached the p
             CMP         R0,#0x0D
             BEQ         EndString
             B           Buffer
-
-EndString	
-            MOVS		R5,#0x00			    ;StrPointer = 0
-            STRB		R5,[R2,#0]              ;Store null termination char
+            
+EndString	MOVS		R5,#0x00			    ;StrPointer = 0
+            STRB		R5,[R2,R3]              ;Store null termination char
             POP		    {R0-R7,PC}
             BX		    LR
             ENDP
@@ -569,24 +572,34 @@ AddIntMultiU		PROC	{R0-R14}
 					PUSH	{R0-R7}
 					MOVS	R6,#4
 					MULS	R3,R6,R3
+                    SUBS  	R3,R3,#1
 					;Clears the C Flag
 					MRS   	R6,APSR
 					MOVS  	R7,#0x20
 					LSLS  	R7,R7,#24
 					BICS  	R6,R6,R7
-					MSR     APSR,R0
+					MSR     APSR,R6
 					
 					
-AddMainLoop			SUBS  	R3,R3,#4
-					LDR		R4,[R1,R3]	;Load word value at current address pointer
-					LDR		R5,[R2,R3]	;""
+AddMainLoop		    MSR     APSR,R6
+					LDRB	R4,[R1,R3]	;Load word value at current address pointer
+					LDRB	R5,[R2,R3]	;""
 					ADCS	R4,R4,R5	;R4 <- R4 + R5
-					STR		R4,[R0,R3]	;R4 -> R0 address
-					CMP		R3,#0		;Checks if max iterations is reached
+                    MRS     R6,APSR
+					STRB	R4,[R0,R3]	;R4 -> R0 address
+                    LSRS    R4,R4,#8
+                    CMP     R4,#1
+                    BEQ     SetC
+BackToAdd		    CMP		R3,#0		;Checks if max iterations is reached
 					BEQ		EndMultiU
+                    SUBS    R3,R3,#1
 					B		AddMainLoop
-					
-EndMultiU			POP		{R0-R7}
+
+SetC			    ORRS  	R6,R6,R7
+                    B       BackToAdd
+
+EndMultiU			MSR     APSR,R6
+                    POP		{R0-R7}
 					BX		LR
 					ENDP
 
@@ -601,36 +614,32 @@ EndMultiU			POP		{R0-R7}
 GetHexIntMulti		PROC	{R0-R14}
 					PUSH	{R0-R7,LR}
 					
-					MOVS	R2,R1		;R2 <- preserve n
 					MOVS	R3,#8
 					MULS	R1,R3,R1	;R1 <- 8 * n
 					;ADDS	R1,R1,#1	;R1 <- (8*n) + 1
 					BL		GetString
-					MOVS	R1,R2		;bring back n to R1
-					MOVS	R4,#4
-					MULS	R1,R4,R1
-					SUBS	R1,R1,#4
-					MOVS	R6,R1
-					MOVS	R1,R2
 					MOVS	R2,#0		;initialize register that temporarily holds the word value
-					MOVS	R4,#28		;Loop/shift counter
-					MOVS	R6,#0
+					MOVS	R4,#4		;shift counter, alternates between 4 and 0 
+					MOVS	R6,#0       ;offset for loading
+                    MOVS    R5,#0       ;offset for storing
 					
 					
-ConvertLoop			LDRB	R3,[R0,R6]	;R3 <- Word at R0
+ConvertLoop			LDRB	R3,[R0,R6]	;R3 <- Byte at R0
 					CMP		R3,#0x3A	;If the byte is less than 0x3A it could be a number
 					BLT		HexNumber
 					CMP		R3,#0x40	;byte is not a number, so if it is over 46 it is not a valid letter either
 					BGT		HexLetter
 HexRep				LSLS	R3,R3,R4	;Shifts the number to the appropriate spot (1st byte loaded goes to MSB spot)
-					ORRS	R2,R3,R2	;Adds this current digit to the overall word
-					ADDS	R5,R5,#1
-					CMP		R4,#0		;Once the shift counter reaches 0, the current word is finished
-					BEQ		ResetVariables	
-					SUBS	R4,R4,#4	;Advances the shift counter
+					ORRS	R2,R3,R2	;Adds this current digit to the current byte
+                    ADDS    R6,R6,#1    ;Move to next memory address
+					CMP		R4,#0		;if R4 is 0 it means a byte is done 
+					BEQ		ResetVariables
+                    MOVS    R4,#0
 					B		ConvertLoop
 
-HexNumber			CMP		R3,#0x2F	;If under 2F its not a number
+HexNumber			CMP     R3,#0
+                    BEQ     ZeroDigit
+                    CMP		R3,#0x2F	;If under 2F its not a number
 					BLE		Failure
 					SUBS	R3,R3,#0x30	;Converts ASCII to the hexadecimal equivalent
 					B		HexRep
@@ -646,13 +655,15 @@ LowerHex			CMP		R3,#0x60
 					BGE		Failure
 					SUBS	R3,R3,#0x57
 					B		HexRep
-					
-ResetVariables		STR		R2,[R0,R6]	;If the program is sent here it means the current word is done, so it is stored to R0
-					SUBS	R6,R6,#4
-					SUBS	R1,R1,#1	;otherwise n--
-					CMP		R1,#0		;Once n or R1 reaches zero it is done
-					BEQ     EndGetHexIntSuc
-					MOVS	R4,#28
+
+ZeroDigit           MOVS    R3,#0
+                    B       HexRep
+
+ResetVariables		STRB	R2,[R0,R5]	;If the program is sent here it means the current byte is done, so it is stored to R0 + R5
+                    ADDS    R5,R5,#1    ;Advance storage offset
+					CMP     R6,R1
+                    BEQ     EndGetHexIntSuc
+                    MOVS    R4,#4
 					MOVS	R2,#0
 					B		ConvertLoop
 					;Sets the C Flag if the result is invalid
@@ -687,13 +698,26 @@ PutHexIntMulti		PROC		{R0-R14}
 					MOVS		R3,R0		;Preserves the address in R3 since R0 is used for PutNumHex
 					MULS		R1,R4,R1	;Iteration counter increases by 4, and iterates n times so: R1 <- N*4
 					MOVS		R2,#0		;Initializes iteration/displacement register
+                    MOVS        R5,#24      ;Shift counter
+                    MOVS        R6,#0       ;Word holder
 
-PutHexMultiLoop		LDR			R0,[R3,R2]	;Loads the currently pointed to word
-					BL			PutNumHex
-					ADDS		R2,#4		;advances the loop counter
+PutHexMultiLoop		LDRB		R0,[R3,R2]	;Loads the currently pointed to word
+					LSLS        R0,R0,R5
+                    ORRS        R6,R0,R6
+                    CMP         R5,#0
+                    BEQ         FinishedWord   
+                    SUBS        R5,R5,#8
+BackHexMult		    ADDS		R2,#1		;advances the loop counter
 					CMP			R1,R2		;Checks if n iterations has been reached
 					BEQ			EndHexMulti
 					B			PutHexMultiLoop
+
+
+FinishedWord        MOVS        R0,R6
+                    BL          PutNumHex
+                    MOVS        R6,#0
+                    MOVS        R5,#24
+                    B           BackHexMult
 
 EndHexMulti			POP			{R0-R7,PC}
 					BX 			LR
@@ -774,10 +798,10 @@ __Vectors_Size  EQU     __Vectors_End - __Vectors
 ;Constants
             AREA    MyConst,DATA,READONLY
 ;>>>>> begin constants here <<<<<
-firstPrompt	DCB		" Enter first 96-bit hex number:   ",0
-secPrompt	DCB		"Enter 96-bit hex number to add:   ",0
-Sum			DCB		"                           Sum:   ",0
-Invalid		DCB		"     Invalid number--try again:   ",0
+firstPrompt	DCB		" Enter first 96-bit hex number:   0x",0
+secPrompt	DCB		"Enter 96-bit hex number to add:   0x",0
+Sum			DCB		"                           Sum:   0x",0
+Invalid		DCB		"     Invalid number--try again:   0x",0
 Overflow	DCB		"OVERFLOW",0
 ;>>>>>   end constants here <<<<<
             ALIGN

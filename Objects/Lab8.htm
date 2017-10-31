@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Objects\Lab8.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\Lab8.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060528: Last Updated: Wed Oct 25 19:51:19 2017
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060528: Last Updated: Tue Oct 31 10:44:12 2017
 <BR><P>
 <H3>Maximum Stack Usage =          0 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -53,7 +53,7 @@ Global Symbols
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> lab8.o(RESET)
 </UL>
-<P><STRONG><a name="[3]"></a>Reset_Handler</STRONG> (Thumb, 118 bytes, Stack size 0 bytes, lab8.o(MyCode))
+<P><STRONG><a name="[3]"></a>Reset_Handler</STRONG> (Thumb, 132 bytes, Stack size 0 bytes, lab8.o(MyCode))
 <BR><BR>[Calls]<UL><LI><a href="#[e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;PutHexIntMulti
 <LI><a href="#[d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GetHexIntMulti
 <LI><a href="#[c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;AddIntMultiU
@@ -94,7 +94,7 @@ Local Symbols
 <BR><BR>[Called By]<UL><LI><a href="#[9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;PutNumU
 </UL>
 
-<P><STRONG><a name="[7]"></a>GetString</STRONG> (Thumb, 62 bytes, Stack size 0 bytes, lab8.o(MyCode))
+<P><STRONG><a name="[7]"></a>GetString</STRONG> (Thumb, 60 bytes, Stack size 0 bytes, lab8.o(MyCode))
 <BR><BR>[Calls]<UL><LI><a href="#[f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;PutChar
 <LI><a href="#[5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GetChar
 </UL>
@@ -127,17 +127,17 @@ Local Symbols
 <BR>[Called By]<UL><LI><a href="#[3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Reset_Handler
 </UL>
 
-<P><STRONG><a name="[c]"></a>AddIntMultiU</STRONG> (Thumb, 40 bytes, Stack size 0 bytes, lab8.o(MyCode))
+<P><STRONG><a name="[c]"></a>AddIntMultiU</STRONG> (Thumb, 64 bytes, Stack size 0 bytes, lab8.o(MyCode))
 <BR><BR>[Called By]<UL><LI><a href="#[3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Reset_Handler
 </UL>
 
-<P><STRONG><a name="[d]"></a>GetHexIntMulti</STRONG> (Thumb, 130 bytes, Stack size 0 bytes, lab8.o(MyCode))
+<P><STRONG><a name="[d]"></a>GetHexIntMulti</STRONG> (Thumb, 124 bytes, Stack size 0 bytes, lab8.o(MyCode))
 <BR><BR>[Calls]<UL><LI><a href="#[7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GetString
 </UL>
 <BR>[Called By]<UL><LI><a href="#[3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Reset_Handler
 </UL>
 
-<P><STRONG><a name="[e]"></a>PutHexIntMulti</STRONG> (Thumb, 28 bytes, Stack size 0 bytes, lab8.o(MyCode))
+<P><STRONG><a name="[e]"></a>PutHexIntMulti</STRONG> (Thumb, 50 bytes, Stack size 0 bytes, lab8.o(MyCode))
 <BR><BR>[Calls]<UL><LI><a href="#[a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;PutNumHex
 </UL>
 <BR>[Called By]<UL><LI><a href="#[3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Reset_Handler
